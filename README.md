@@ -1,69 +1,152 @@
 # Voice Live
 
-类似 ChatGPT 语音模式（ChatGPT Live）的 Web 应用，支持可插拔的多 LLM 实时语音后端。
-MVP 已接入 **OpenAI Realtime API**（即 ChatGPT 语音模式背后的接口），默认模型
-`gpt-realtime-2.1`。
+A web app similar to ChatGPT's voice mode (ChatGPT Live), with a pluggable
+architecture for multiple realtime LLM voice backends. The MVP ships with the
+**OpenAI Realtime API** (the same interface behind ChatGPT voice mode), using
+`gpt-realtime-2.1` as the default model.
 
-> 说明：GPT‑5.6（Sol/Terra/Luna）是文本模型系列，OpenAI 的实时语音走的是独立的
-> GPT‑Realtime 模型线；ChatGPT 语音模式当前对应的最新模型即 `gpt-realtime-2.1`。
+> Note: GPT‑5.6 (Sol/Terra/Luna) is the text model family; OpenAI's realtime
+> voice runs on the separate GPT‑Realtime model line. The latest model behind
+> ChatGPT voice mode is `gpt-realtime-2.1`.
 
-## 功能
+## Features
 
-- 实时语音对话：浏览器通过 WebRTC 直连 OpenAI，延迟最低，API key 不进浏览器
-- 实时字幕：你说的话（输入转写）和 AI 的回答逐字显示
-- 通话中可静音、可打字补充发言
-- 模型两档可选（旗舰版 gpt-realtime-2.1 / 高速省钱版 -mini）、声音 10 种（marin、cedar 等）、自定义系统指令
-- 点击声音即可试听（播放 public/voice-previews/ 下预生成的 MP3；新增声音后运行 `npm run gen-previews` 重新生成）
-- 多后端架构：实现 `LiveClient` 接口并注册即可接入新后端（如 Gemini Live）
+- Realtime voice conversation: the browser connects directly to OpenAI over
+  WebRTC for minimal latency; the API key never reaches the browser
+- Live captions: your speech (input transcription) and the AI's reply are
+  rendered word by word
+- Mute and type-to-talk during a call
+- Two model tiers (flagship `gpt-realtime-2.1` / faster & cheaper `-mini`),
+  10 voices (marin, cedar, …), custom system instructions
+- Click a voice to preview it (plays pre-generated MP3s from
+  `public/voice-previews/`; run `npm run gen-previews` after adding voices)
+- Multi-backend architecture: implement the `LiveClient` interface and
+  register it to add a new backend (e.g. Gemini Live)
+- Optional login gate: can require a valid session from a co-hosted app
+  (e.g. LibreChat) before serving the app (see
+  [Login gate](#login-gate-reusing-another-apps-session); off by default)
 
-## 快速开始
+## Quick start
 
 ```bash
-# 1. 安装依赖
+# 1. Install dependencies
 npm install
 
-# 2. 配置 API key（二选一）
-#    a) 复制 .env.example 为 .env，填入 OPENAI_API_KEY（推荐）
-#    b) 不配置，启动后在页面左侧设置里粘贴 key
+# 2. Configure the API key (either option)
+#    a) Copy .env.example to .env and set OPENAI_API_KEY (recommended)
+#    b) Skip it and paste a key in the in-page settings panel after launch
 cp .env.example .env
 
-# 3. 启动（token 服务 :8787 + 前端 :5173）
+# 3. Start (token service on :8787 + frontend on :5173)
 npm run dev
 ```
 
-打开 http://localhost:5173 ，点击"开始通话"，授权麦克风后直接说话即可。
+Open http://localhost:5173, click "Start call", grant microphone access, and
+just talk.
 
-生产部署：`npm run build && npm start`（Express 同时托管静态文件和 token 服务）。
+Production: `npm run build && npm start` (Express serves both the static
+build and the token service), or use the included [Dockerfile](Dockerfile).
 
-## 架构
+## Configuration
+
+All runtime settings are environment variables (loaded from `.env` in the
+project root, which overrides inherited shell variables). See
+[.env.example](.env.example).
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `OPENAI_API_KEY` | — | OpenAI API key. Required unless users paste their own key in the page settings. |
+| `OPENAI_BASE_URL` | `https://api.openai.com` | Custom OpenAI-compatible API base URL. |
+| `TOKEN_SERVER_PORT` | `8787` | Port for the Express token service. Must match the `/api` proxy target in `vite.config.ts` during development. |
+| `BASE_PATH` | `/` (root) | URL sub-path the server mounts everything under, e.g. `/voice` when deployed behind a reverse proxy at `https://example.com/voice/`. Pair with the `VITE_BASE_PATH` build arg below. |
+| `REQUIRE_AUTH` | `false` | Set to `true` to require a valid login for every request except `/api/health`. When enabled, `AUTH_JWT_SECRET` must also be set or the server refuses to start. |
+| `AUTH_JWT_SECRET` | — | JWT signing secret of the app whose login cookie is verified (for LibreChat, copy `JWT_REFRESH_SECRET` from its `.env`). |
+| `AUTH_COOKIE_NAME` | `refreshToken` | Name of the session cookie to verify. The default matches LibreChat's cookie. |
+| `LOGIN_REDIRECT_URL` | `/login` | Where browsers without a valid login are redirected. Non-browser requests get `401` JSON instead. |
+
+Build-time setting (Vite):
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `VITE_BASE_PATH` | `/` | Public base path baked into the frontend build (asset URLs and same-origin API calls). Set to `/voice/` when serving under a sub-path; passed as a build arg in the [Dockerfile](Dockerfile). |
+
+## Architecture
 
 ```
-浏览器 ──(1) POST /api/openai/client-secret──▶ Express (server/index.mjs)
-   │                                              │ 用 OPENAI_API_KEY 调
+Browser ──(1) POST /api/openai/client-secret──▶ Express (server/index.mjs)
+   │                                              │ uses OPENAI_API_KEY to call
    │                                              ▼ POST /v1/realtime/client_secrets
-   │◀──── 临时密钥 ek_... ────────────────────  OpenAI
+   │◀──── ephemeral key ek_... ────────────────  OpenAI
    │
-   └─(2) WebRTC (SDP → /v1/realtime/calls, 音频双向 + "oai-events" 数据通道)──▶ OpenAI
+   └─(2) WebRTC (SDP → /v1/realtime/calls, bidirectional audio + "oai-events" data channel)──▶ OpenAI
 ```
 
-- `server/index.mjs` — 唯一的服务端：换取临时密钥（真实 key 不出服务器）
-- `src/lib/live/types.ts` — 后端无关的 `LiveClient` / `LiveProvider` 抽象
-- `src/lib/live/providers/openai.ts` — OpenAI Realtime 的 WebRTC 实现
-- `src/lib/live/registry.ts` — 后端注册表（新后端在这里加一行）
-- `src/App.tsx` + `src/components/` — 通话 UI（发光球、字幕、设置）
+- `server/index.mjs` — the only server piece: mints ephemeral keys (the real
+  key never leaves the server) and optionally enforces the LibreChat login gate
+- `src/lib/live/types.ts` — backend-agnostic `LiveClient` / `LiveProvider`
+  abstractions
+- `src/lib/live/providers/openai.ts` — WebRTC implementation for OpenAI Realtime
+- `src/lib/live/registry.ts` — backend registry (add new backends here)
+- `src/lib/base.ts` — `withBase()` helper; all same-origin URLs go through it
+  so the app works under a sub-path
+- `src/App.tsx` + `src/components/` — call UI (glowing orb, captions, settings)
 
-## 接入新的 live 后端
+## Login gate (reusing another app's session)
 
-1. 在 `src/lib/live/providers/<name>.ts` 中实现 `LiveClient`
-   （connect / disconnect / setMuted / sendText / 音频流 / transcript 事件）
-2. 导出一个 `LiveProvider`（id、模型列表、声音列表、`createClient`）
-3. 在 `src/lib/live/registry.ts` 的 `providers` 数组中注册
-4. 如需服务端换 token，在 `server/index.mjs` 加对应端点
+Voice Live can piggyback on the login of any app deployed on the **same
+domain** that issues an HMAC-signed JWT session cookie — **without modifying
+that app at all**. This is opt-in and disabled by default.
 
-## 环境变量（.env）
+How it works: when a user logs into the host app, it sets an httpOnly JWT
+cookie. If Voice Live is served from the same domain (as a sub-path, e.g.
+`https://chat.example.com/voice/`), the browser sends that cookie along
+automatically. With `REQUIRE_AUTH=true`, the Express server verifies the
+cookie's signature with the shared secret (`AUTH_JWT_SECRET`): valid sessions
+pass through, everyone else is redirected to the login page (or gets a `401`
+for API calls). The key-minting endpoint is behind the same gate, so only
+logged-in users can spend your OpenAI quota.
 
-| 变量 | 说明 |
-| --- | --- |
-| `OPENAI_API_KEY` | OpenAI API key（必需，除非在页面里填） |
-| `OPENAI_BASE_URL` | 自定义 API 地址，默认 `https://api.openai.com` |
-| `TOKEN_SERVER_PORT` | token 服务端口，默认 8787（需与 vite 代理一致） |
+[LibreChat](https://github.com/danny-avila/LibreChat) is the worked example
+(and the source of the defaults): it sets a `refreshToken` cookie signed with
+the `JWT_REFRESH_SECRET` from its `.env`. For a different host app, point
+`AUTH_COOKIE_NAME` at its session cookie and `AUTH_JWT_SECRET` at its signing
+secret.
+
+Example service for a LibreChat `docker-compose.yml` that uses
+[nginx-proxy](https://github.com/nginx-proxy/nginx-proxy) (path-based routing
+via `VIRTUAL_PATH`):
+
+```yaml
+  voice-live:
+    build:
+      context: ./voice-live
+      args:
+        - VITE_BASE_PATH=/voice/
+    restart: always
+    environment:
+      - VIRTUAL_HOST=chat.example.com     # same host as LibreChat
+      - VIRTUAL_PATH=/voice
+      - VIRTUAL_PORT=8787
+      - BASE_PATH=/voice
+      - REQUIRE_AUTH=true
+      - AUTH_JWT_SECRET=${JWT_REFRESH_SECRET}   # from LibreChat's .env
+      - LOGIN_REDIRECT_URL=https://chat.example.com/login
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+```
+
+Known limits: the gate verifies that the cookie is a genuine, unexpired
+token (for LibreChat the default lifetime is 7 days). It does not query the
+host app's session store, so logging out there does not instantly revoke
+access for a captured cookie until it expires. Sub-domain deployments do not
+work when the host app's cookie is host-only (LibreChat's is), so Voice Live
+must live on the same host.
+
+## Adding a new live backend
+
+1. Implement `LiveClient` in `src/lib/live/providers/<name>.ts`
+   (connect / disconnect / setMuted / sendText / audio streams / transcript
+   events)
+2. Export a `LiveProvider` (id, model list, voice list, `createClient`)
+3. Register it in the `providers` array in `src/lib/live/registry.ts`
+4. If the backend needs a server-side token exchange, add an endpoint in
+   `server/index.mjs`

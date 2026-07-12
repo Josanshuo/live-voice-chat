@@ -4,6 +4,7 @@ import TranscriptView from "./components/TranscriptView";
 import SettingsPanel, { Settings } from "./components/SettingsPanel";
 import { getProvider, providers } from "./lib/live/registry";
 import { LiveClient, LiveStatus, TranscriptItem } from "./lib/live/types";
+import { withBase } from "./lib/base";
 
 const SETTINGS_KEY = "voice-live-settings";
 
@@ -59,7 +60,7 @@ export default function App() {
   }, [settings]);
 
   useEffect(() => {
-    fetch("/api/health")
+    fetch(withBase("/api/health"))
       .then((r) => r.json())
       .then((d) => setHasServerKey(Boolean(d.hasServerKey)))
       .catch(() => setHasServerKey(false));

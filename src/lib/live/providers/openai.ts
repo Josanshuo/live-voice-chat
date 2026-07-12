@@ -4,6 +4,7 @@ import {
   LiveSessionOptions,
   LiveStatus,
 } from "../types";
+import { withBase } from "../../base";
 
 // OpenAI Realtime API over WebRTC.
 // Flow: ask our server for an ephemeral client secret, then connect the
@@ -27,7 +28,7 @@ class OpenAIRealtimeClient extends LiveClient {
     };
     if (opts.apiKeyOverride) headers["x-openai-key"] = opts.apiKeyOverride;
 
-    const tokenRes = await fetch("/api/openai/client-secret", {
+    const tokenRes = await fetch(withBase("/api/openai/client-secret"), {
       method: "POST",
       headers,
       body: JSON.stringify({
@@ -276,5 +277,5 @@ export const openaiProvider: LiveProvider = {
   createClient: () => new OpenAIRealtimeClient(),
   // Pre-generated with `npm run gen-previews`, served as static files.
   voicePreviewUrl: (voice: string) =>
-    `/voice-previews/openai/${encodeURIComponent(voice)}.mp3`,
+    withBase(`/voice-previews/openai/${encodeURIComponent(voice)}.mp3`),
 };
