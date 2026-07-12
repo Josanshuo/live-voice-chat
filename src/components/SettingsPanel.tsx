@@ -13,7 +13,8 @@ export interface Settings {
 // Custom dropdown instead of a native <select>: embedded browsers often
 // can't open native dropdown popups, and this stays styleable and testable
 // everywhere. Closes on outside click or Escape.
-function Dropdown({
+// Exported for unit tests.
+export function Dropdown({
   options,
   value,
   onSelect,
