@@ -89,7 +89,7 @@ router.post("/api/openai/client-secret", async (req, res) => {
   if (!apiKey) {
     return res.status(400).json({
       error:
-        "缺少 OpenAI API key：请在项目根目录的 .env 中设置 OPENAI_API_KEY，或在页面设置中填入 key。",
+        "Missing OpenAI API key: set OPENAI_API_KEY in the server's .env, or paste a key in the page settings.",
     });
   }
 

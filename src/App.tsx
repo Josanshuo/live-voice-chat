@@ -5,6 +5,7 @@ import SettingsPanel, { Settings } from "./components/SettingsPanel";
 import { getProvider, providers } from "./lib/live/registry";
 import { LiveClient, LiveStatus, TranscriptItem } from "./lib/live/types";
 import { withBase } from "./lib/base";
+import { setLang, t, useLang } from "./lib/i18n";
 
 const SETTINGS_KEY = "voice-live-settings";
 
@@ -39,6 +40,8 @@ function loadSettings(): Settings {
 }
 
 export default function App() {
+  // Re-renders the whole tree on language switch (no memoized children).
+  const lang = useLang();
   const [settings, setSettings] = useState<Settings>(loadSettings);
   const [status, setStatus] = useState<LiveStatus>("idle");
   const [statusDetail, setStatusDetail] = useState<string>("");
@@ -163,11 +166,11 @@ export default function App() {
   };
 
   const statusLabel: Record<LiveStatus, string> = {
-    idle: "点击下方按钮开始语音对话",
-    connecting: "连接中…",
-    connected: muted ? "已静音" : "正在通话 · 直接开口说话即可",
-    closed: "通话已结束",
-    error: "出错了",
+    idle: t("status.idle"),
+    connecting: t("status.connecting"),
+    connected: muted ? t("status.muted") : t("status.live"),
+    closed: t("status.closed"),
+    error: t("status.error"),
   };
 
   return (
@@ -176,7 +179,23 @@ export default function App() {
 
       <header className="header">
         <h1>Voice Live</h1>
-        <span className="header-sub">多后端 LLM 实时语音 · MVP: OpenAI Realtime</span>
+        <span className="header-sub">{t("header.subtitle")}</span>
+        <div className="lang-toggle" role="group" aria-label="Language / 语言">
+          <button
+            className={lang === "en" ? "lang-active" : ""}
+            aria-pressed={lang === "en"}
+            onClick={() => setLang("en")}
+          >
+            EN
+          </button>
+          <button
+            className={lang === "zh" ? "lang-active" : ""}
+            aria-pressed={lang === "zh"}
+            onClick={() => setLang("zh")}
+          >
+            中文
+          </button>
+        </div>
         <div className="header-actions">
           <button
             className="icon-btn"
@@ -185,7 +204,7 @@ export default function App() {
               setSettingsOpen(false);
             }}
           >
-            字幕
+            {t("nav.transcript")}
           </button>
           <button
             className="icon-btn"
@@ -194,7 +213,7 @@ export default function App() {
               setTranscriptOpen(false);
             }}
           >
-            设置
+            {t("nav.settings")}
           </button>
         </div>
       </header>
@@ -204,9 +223,9 @@ export default function App() {
 
         <aside className={`sidebar ${settingsOpen ? "sheet-open" : ""}`}>
           <div className="sheet-header">
-            <span>设置</span>
+            <span>{t("nav.settings")}</span>
             <button className="icon-btn" onClick={closeSheets}>
-              完成
+              {t("nav.done")}
             </button>
           </div>
           <SettingsPanel
@@ -231,7 +250,7 @@ export default function App() {
           {lastTranscript && (
             <button className="captions" onClick={() => setTranscriptOpen(true)}>
               <span className="captions-role">
-                {lastTranscript.role === "user" ? "你" : "AI"}
+                {lastTranscript.role === "user" ? t("role.you") : t("role.ai")}
               </span>
               {lastTranscript.text || "…"}
             </button>
@@ -240,19 +259,19 @@ export default function App() {
           <div className="controls">
             {!inCall ? (
               <button className="btn btn-primary" onClick={startCall}>
-                开始通话
+                {t("call.start")}
               </button>
             ) : (
               <>
                 <button className="btn btn-danger" onClick={endCall}>
-                  结束
+                  {t("call.end")}
                 </button>
                 <button
                   className={`btn ${muted ? "btn-active" : ""}`}
                   onClick={toggleMute}
                   disabled={status !== "connected"}
                 >
-                  {muted ? "取消静音" : "静音"}
+                  {muted ? t("call.unmute") : t("call.mute")}
                 </button>
               </>
             )}
@@ -262,12 +281,12 @@ export default function App() {
             <div className="text-input">
               <input
                 value={textDraft}
-                placeholder="也可以打字发送…"
+                placeholder={t("input.placeholder")}
                 onChange={(e) => setTextDraft(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && sendText()}
               />
               <button className="btn" onClick={sendText}>
-                发送
+                {t("input.send")}
               </button>
             </div>
           )}
@@ -275,9 +294,9 @@ export default function App() {
 
         <aside className={`transcript-panel ${transcriptOpen ? "sheet-open" : ""}`}>
           <div className="sheet-header">
-            <span>字幕</span>
+            <span>{t("nav.transcript")}</span>
             <button className="icon-btn" onClick={closeSheets}>
-              完成
+              {t("nav.done")}
             </button>
           </div>
           <TranscriptView items={transcripts} />

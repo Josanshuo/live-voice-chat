@@ -1,5 +1,7 @@
 # Voice Live
 
+English | [中文](README.zh-CN.md)
+
 A web app similar to ChatGPT's voice mode (ChatGPT Live), with a pluggable
 architecture for multiple realtime LLM voice backends. The MVP ships with the
 **OpenAI Realtime API** (the same interface behind ChatGPT voice mode), using
@@ -22,6 +24,8 @@ architecture for multiple realtime LLM voice backends. The MVP ships with the
   `public/voice-previews/`; run `npm run gen-previews` after adding voices)
 - Multi-backend architecture: implement the `LiveClient` interface and
   register it to add a new backend (e.g. Gemini Live)
+- Bilingual UI (English / 中文): defaults to the browser language, switchable
+  from the header; the choice is remembered in `localStorage`
 - Optional login gate: can require a valid session from a co-hosted app
   (e.g. LibreChat) before serving the app (see
   [Login gate](#login-gate-reusing-another-apps-session); off by default)

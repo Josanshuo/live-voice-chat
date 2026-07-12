@@ -5,6 +5,7 @@ import {
   LiveStatus,
 } from "../types";
 import { withBase } from "../../base";
+import { t } from "../../i18n";
 
 // OpenAI Realtime API over WebRTC.
 // Flow: ask our server for an ephemeral client secret, then connect the
@@ -21,7 +22,7 @@ class OpenAIRealtimeClient extends LiveClient {
 
   async connect(opts: LiveSessionOptions): Promise<void> {
     this.closed = false;
-    this.setStatus("connecting", "获取临时密钥…");
+    this.setStatus("connecting", t("openai.gettingKey"));
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
@@ -39,11 +40,11 @@ class OpenAIRealtimeClient extends LiveClient {
     });
     const tokenData = await tokenRes.json().catch(() => ({}));
     if (!tokenRes.ok || !tokenData.value) {
-      throw new Error(tokenData.error || "获取临时密钥失败");
+      throw new Error(tokenData.error || t("openai.keyFailed"));
     }
     const ephemeralKey: string = tokenData.value;
 
-    this.setStatus("connecting", "请求麦克风…");
+    this.setStatus("connecting", t("openai.requestingMic"));
     let micAvailable = true;
     try {
       this.localStream = await navigator.mediaDevices.getUserMedia({
@@ -56,7 +57,7 @@ class OpenAIRealtimeClient extends LiveClient {
     }
     if (this.closed) return this.cleanup();
 
-    this.setStatus("connecting", "建立 WebRTC 连接…");
+    this.setStatus("connecting", t("openai.connectingWebrtc"));
     const pc = new RTCPeerConnection();
     this.pc = pc;
 
@@ -75,10 +76,10 @@ class OpenAIRealtimeClient extends LiveClient {
     pc.onconnectionstatechange = () => {
       if (this.closed) return;
       if (pc.connectionState === "failed") {
-        this.emit("error", { message: "WebRTC 连接失败" });
-        this.setStatus("error", "WebRTC 连接失败");
+        this.emit("error", { message: t("openai.webrtcFailed") });
+        this.setStatus("error", t("openai.webrtcFailed"));
       } else if (pc.connectionState === "disconnected") {
-        this.setStatus("closed", "连接已断开");
+        this.setStatus("closed", t("openai.disconnected"));
       }
     };
 
@@ -99,7 +100,7 @@ class OpenAIRealtimeClient extends LiveClient {
       });
       this.setStatus(
         "connected",
-        micAvailable ? undefined : "麦克风不可用：已进入文字模式，仍可听到 AI 语音"
+        micAvailable ? undefined : t("openai.micUnavailable")
       );
     };
     dc.onmessage = (e) => {
@@ -110,7 +111,7 @@ class OpenAIRealtimeClient extends LiveClient {
       }
     };
     dc.onclose = () => {
-      if (!this.closed) this.setStatus("closed", "会话已结束");
+      if (!this.closed) this.setStatus("closed", t("openai.sessionEnded"));
     };
 
     const offer = await pc.createOffer();
@@ -126,7 +127,7 @@ class OpenAIRealtimeClient extends LiveClient {
     });
     if (!sdpRes.ok) {
       const text = await sdpRes.text().catch(() => "");
-      throw new Error(`Realtime 连接失败 (${sdpRes.status}): ${text.slice(0, 200)}`);
+      throw new Error(t("openai.connectFailed", sdpRes.status, text.slice(0, 200)));
     }
     const answerSdp = await sdpRes.text();
     if (this.closed) return this.cleanup();
@@ -229,7 +230,7 @@ class OpenAIRealtimeClient extends LiveClient {
         break;
 
       case "error":
-        this.emit("error", { message: ev.error?.message ?? "未知错误" });
+        this.emit("error", { message: ev.error?.message ?? t("openai.unknownError") });
         break;
     }
   }
@@ -247,17 +248,25 @@ class OpenAIRealtimeClient extends LiveClient {
 
 export const openaiProvider: LiveProvider = {
   id: "openai",
-  label: "OpenAI（ChatGPT 语音同款）",
+  // Getters so the labels re-resolve in the current language on every
+  // render (components re-render on language switch via useLang()).
+  get label() {
+    return t("openai.providerLabel");
+  },
   // Two tiers per backend: flagship & fast/cheap. The UI merges
   // backend + model into a single picker.
   models: [
     {
       id: "gpt-realtime-2.1",
-      label: "旗舰版 · gpt-realtime-2.1（ChatGPT 语音同款）",
+      get label() {
+        return t("openai.modelFlagship");
+      },
     },
     {
       id: "gpt-realtime-2.1-mini",
-      label: "高速省钱版 · gpt-realtime-2.1-mini",
+      get label() {
+        return t("openai.modelMini");
+      },
     },
   ],
   defaultModel: "gpt-realtime-2.1",

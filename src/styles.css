@@ -51,10 +51,41 @@ body {
   font-size: 12px;
 }
 
-/* Mobile-only chrome; hidden on desktop where panels are always visible. */
+/* Always-visible language switcher (EN | 中文). */
+.lang-toggle {
+  margin-left: auto;
+  align-self: center;
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.lang-toggle button {
+  background: var(--panel);
+  border: none;
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+
+.lang-toggle button:hover {
+  color: var(--text);
+}
+
+.lang-toggle .lang-active,
+.lang-toggle .lang-active:hover {
+  background: #16233d;
+  color: var(--accent-2);
+}
+
+/* Mobile-only chrome; hidden on desktop where panels are always visible.
+   Sits right of .lang-toggle, whose auto margin pushes both to the edge. */
 .header-actions {
   display: none;
-  margin-left: auto;
   gap: 8px;
 }
 

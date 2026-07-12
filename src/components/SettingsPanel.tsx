@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { providers } from "../lib/live/registry";
+import { t } from "../lib/i18n";
 
 export interface Settings {
   providerId: string;
@@ -96,12 +97,12 @@ export default function SettingsPanel({
     <div className="settings">
       {disabled && (
         <div className="settings-lock">
-          通话中无法更改设置，结束通话后即可修改
+          {t("settings.locked")}
         </div>
       )}
 
       <div className="field">
-        <span className="field-name">模型</span>
+        <span className="field-name">{t("settings.model")}</span>
         <ChipGroup
           options={modelOptions}
           value={`${settings.providerId}::${settings.model}`}
@@ -124,7 +125,8 @@ export default function SettingsPanel({
 
       <div className="field">
         <span className="field-name">
-          声音{provider.voicePreviewUrl ? "（点击试听）" : ""}
+          {t("settings.voice")}
+          {provider.voicePreviewUrl ? t("settings.voicePreviewHint") : ""}
         </span>
         <ChipGroup
           wrap
@@ -142,10 +144,10 @@ export default function SettingsPanel({
       </div>
 
       <label className="field">
-        <span className="field-name">系统指令（可选）</span>
+        <span className="field-name">{t("settings.instructions")}</span>
         <textarea
           rows={3}
-          placeholder="例如：你是一个友善的中文语音助手，回答尽量简短。"
+          placeholder={t("settings.instructionsPlaceholder")}
           value={settings.instructions}
           disabled={disabled}
           onChange={(e) => set({ instructions: e.target.value })}
@@ -157,15 +159,12 @@ export default function SettingsPanel({
           <span className="field-name">OpenAI API Key</span>
           <input
             type="password"
-            placeholder="sk-...（服务器未配置 .env 时填写）"
+            placeholder={t("settings.apiKeyPlaceholder")}
             value={settings.apiKey}
             disabled={disabled}
             onChange={(e) => set({ apiKey: e.target.value })}
           />
-          <small>
-            仅保存在本机浏览器 localStorage，并只发送给本地 token 服务。
-            推荐改用项目根目录 .env 配置 OPENAI_API_KEY。
-          </small>
+          <small>{t("settings.apiKeyNote")}</small>
         </label>
       )}
     </div>
