@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 
 export default defineConfig({
@@ -12,5 +12,8 @@ export default defineConfig({
       // keep in sync with the token service port (server/index.mjs)
       "/api": `http://localhost:${process.env.TOKEN_SERVER_PORT || 8787}`,
     },
+  },
+  test: {
+    environment: "jsdom",
   },
 });
