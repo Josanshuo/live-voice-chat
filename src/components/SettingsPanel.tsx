@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { providers } from "../lib/live/registry";
 
 export interface Settings {
@@ -58,6 +59,31 @@ export default function SettingsPanel({
 
   const set = (patch: Partial<Settings>) => onChange({ ...settings, ...patch });
 
+  // Voice preview: picking a voice also plays its pre-generated sample
+  // (a static MP3, cached by the browser like any other asset).
+  const [previewing, setPreviewing] = useState<string | null>(null);
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    return () => previewAudioRef.current?.pause();
+  }, []);
+
+  const previewVoice = async (voice: string) => {
+    if (!provider.voicePreviewUrl) return;
+    setPreviewing(voice);
+    try {
+      if (!previewAudioRef.current) previewAudioRef.current = new Audio();
+      const audio = previewAudioRef.current;
+      audio.pause();
+      audio.src = provider.voicePreviewUrl(voice);
+      audio.onended = () => setPreviewing((v) => (v === voice ? null : v));
+      await audio.play();
+    } catch (err) {
+      console.warn("voice preview failed:", err);
+      setPreviewing((v) => (v === voice ? null : v));
+    }
+  };
+
   // One picker for backend + model: every backend contributes its tiers.
   const modelOptions = providers.flatMap((p) =>
     p.models.map((m) => ({
@@ -97,13 +123,21 @@ export default function SettingsPanel({
       </div>
 
       <div className="field">
-        <span className="field-name">声音</span>
+        <span className="field-name">
+          声音{provider.voicePreviewUrl ? "（点击试听）" : ""}
+        </span>
         <ChipGroup
           wrap
-          options={provider.voices.map((v) => ({ id: v, label: v }))}
+          options={provider.voices.map((v) => ({
+            id: v,
+            label: v === previewing ? `${v} ♪` : v,
+          }))}
           value={settings.voice}
           disabled={disabled}
-          onSelect={(id) => set({ voice: id })}
+          onSelect={(id) => {
+            set({ voice: id });
+            previewVoice(id);
+          }}
         />
       </div>
 

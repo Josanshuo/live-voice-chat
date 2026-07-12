@@ -6,7 +6,8 @@ export default defineConfig({
   server: {
     port: Number(process.env.PORT) || 5173,
     proxy: {
-      "/api": "http://localhost:8787",
+      // keep in sync with the token service port (server/index.mjs)
+      "/api": `http://localhost:${process.env.TOKEN_SERVER_PORT || 8787}`,
     },
   },
 });

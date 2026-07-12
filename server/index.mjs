@@ -67,6 +67,7 @@ app.post("/api/openai/client-secret", async (req, res) => {
 });
 
 // Serve the production build when it exists (npm run build && npm start).
+// Voice-preview MP3s live in public/ and ship inside dist as static files.
 const dist = path.resolve(__dirname, "../dist");
 if (fs.existsSync(dist)) {
   app.use(express.static(dist));

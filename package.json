@@ -7,6 +7,7 @@
     "dev": "concurrently -k -n server,web \"node server/index.mjs\" \"vite\"",
     "build": "vite build",
     "typecheck": "tsc --noEmit",
+    "gen-previews": "node scripts/generate-voice-previews.mjs",
     "start": "node server/index.mjs"
   },
   "dependencies": {

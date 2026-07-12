@@ -274,4 +274,7 @@ export const openaiProvider: LiveProvider = {
   ],
   defaultVoice: "marin",
   createClient: () => new OpenAIRealtimeClient(),
+  // Pre-generated with `npm run gen-previews`, served as static files.
+  voicePreviewUrl: (voice: string) =>
+    `/voice-previews/openai/${encodeURIComponent(voice)}.mp3`,
 };

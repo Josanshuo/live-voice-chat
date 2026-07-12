@@ -83,4 +83,6 @@ export interface LiveProvider {
   voices: string[];
   defaultVoice: string;
   createClient(): LiveClient;
+  /** Optional: URL of a pre-generated audio sample for previewing a voice. */
+  voicePreviewUrl?: (voice: string) => string;
 }
