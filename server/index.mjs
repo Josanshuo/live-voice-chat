@@ -19,6 +19,7 @@ app.use(express.json());
 // points at.
 const PORT = process.env.TOKEN_SERVER_PORT || 8787;
 const OPENAI_BASE = process.env.OPENAI_BASE_URL || "https://api.openai.com";
+const XAI_BASE = process.env.XAI_BASE_URL || "https://api.x.ai";
 
 // When deployed behind LibreChat's nginx the app lives under /voice; nginx
 // passes the prefix through unchanged, so mount everything under BASE_PATH.
@@ -75,7 +76,14 @@ const router = express.Router();
 // Lets the UI know whether the server already holds an API key.
 // Public: also usable as a container healthcheck.
 router.get("/api/health", (_req, res) => {
-  res.json({ ok: true, hasServerKey: Boolean(process.env.OPENAI_API_KEY) });
+  res.json({
+    ok: true,
+    hasServerKey: Boolean(process.env.OPENAI_API_KEY),
+    providers: {
+      openai: Boolean(process.env.OPENAI_API_KEY),
+      grok: Boolean(process.env.XAI_API_KEY),
+    },
+  });
 });
 
 // Everything below — the app itself and the key-minting endpoint — requires
@@ -121,6 +129,39 @@ router.post("/api/openai/client-secret", async (req, res) => {
     res.json({ value: data.value, session: data.session });
   } catch (err) {
     res.status(502).json({ error: `无法访问 OpenAI: ${err.message}` });
+  }
+});
+
+// Same idea for the xAI Grok Voice Agent API: mint an ephemeral client
+// secret; the browser then opens a WebSocket straight to api.x.ai with it.
+router.post("/api/xai/client-secret", async (req, res) => {
+  const apiKey = req.get("x-xai-key") || process.env.XAI_API_KEY;
+  if (!apiKey) {
+    return res.status(400).json({
+      error: "Missing xAI API key: set XAI_API_KEY in the server's .env.",
+    });
+  }
+
+  const { model } = req.body ?? {};
+  try {
+    const upstream = await fetch(`${XAI_BASE}/v1/realtime/client_secrets`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        session: { type: "realtime", model: model || "grok-voice-latest" },
+      }),
+    });
+    const data = await upstream.json().catch(() => ({}));
+    if (!upstream.ok) {
+      const message = data?.error?.message || data?.error || `xAI returned ${upstream.status}`;
+      return res.status(upstream.status).json({ error: message });
+    }
+    res.json({ value: data.value, expires_at: data.expires_at });
+  } catch (err) {
+    res.status(502).json({ error: `Cannot reach xAI: ${err.message}` });
   }
 });
 

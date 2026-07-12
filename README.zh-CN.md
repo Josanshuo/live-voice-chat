@@ -3,15 +3,17 @@
 [English](README.md) | 中文
 
 类似 ChatGPT 语音模式（ChatGPT Live）的 Web 应用，支持可插拔的多 LLM 实时语音
-后端。MVP 已接入 **OpenAI Realtime API**（即 ChatGPT 语音模式背后的接口），默认
-模型 `gpt-realtime-2.1`。
+后端。已接入两个后端：**OpenAI Realtime API**（ChatGPT 语音同款，默认模型
+`gpt-realtime-2.1`）和 **xAI Grok Voice Agent API**（`grok-voice-latest`，
+Eve/Ara/Rex/Sal/Leo 五种声音）。
 
 > 说明：GPT‑5.6（Sol/Terra/Luna）是文本模型系列，OpenAI 的实时语音走的是独立的
 > GPT‑Realtime 模型线；ChatGPT 语音模式当前对应的最新模型即 `gpt-realtime-2.1`。
 
 ## 功能
 
-- 实时语音对话：浏览器通过 WebRTC 直连 OpenAI，延迟最低，API key 不进浏览器
+- 实时语音对话：浏览器直连各家后端（OpenAI 走 WebRTC，Grok 走 WebSocket + PCM
+  流），延迟最低；API key 不进浏览器，token 服务为两家后端统一换发短时临时密钥
 - 实时字幕：你说的话（输入转写）和 AI 的回答逐字显示
 - 通话中可静音、可打字补充发言
 - 模型两档可选（旗舰版 `gpt-realtime-2.1` / 高速省钱版 `-mini`）、声音 10 种
@@ -53,6 +55,8 @@ npm run dev
 | --- | --- | --- |
 | `OPENAI_API_KEY` | — | OpenAI API key。除非用户在页面设置里自填 key，否则必需。 |
 | `OPENAI_BASE_URL` | `https://api.openai.com` | 自定义 OpenAI 兼容 API 地址。 |
+| `XAI_API_KEY` | — | xAI API key，启用 Grok Voice Agent 后端时必需。 |
+| `XAI_BASE_URL` | `https://api.x.ai` | 自定义 xAI API 地址。 |
 | `TOKEN_SERVER_PORT` | `8787` | Express token 服务端口。开发时需与 `vite.config.ts` 中 `/api` 代理目标一致。 |
 | `BASE_PATH` | `/`（根路径） | 服务端挂载的 URL 子路径，例如部署在 `https://example.com/voice/` 反代之后时设为 `/voice`。需与下方 `VITE_BASE_PATH` 构建参数配套。 |
 | `REQUIRE_AUTH` | `false` | 设为 `true` 时，除 `/api/health` 外的所有请求都要求有效登录。启用时必须同时设置 `AUTH_JWT_SECRET`，否则服务端拒绝启动。 |

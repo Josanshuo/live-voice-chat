@@ -3,9 +3,10 @@
 English | [中文](README.zh-CN.md)
 
 A web app similar to ChatGPT's voice mode (ChatGPT Live), with a pluggable
-architecture for multiple realtime LLM voice backends. The MVP ships with the
-**OpenAI Realtime API** (the same interface behind ChatGPT voice mode), using
-`gpt-realtime-2.1` as the default model.
+architecture for multiple realtime LLM voice backends. Ships with two
+backends: the **OpenAI Realtime API** (the engine behind ChatGPT voice,
+default model `gpt-realtime-2.1`) and the **xAI Grok Voice Agent API**
+(`grok-voice-latest`, voices Eve/Ara/Rex/Sal/Leo).
 
 > Note: GPT‑5.6 (Sol/Terra/Luna) is the text model family; OpenAI's realtime
 > voice runs on the separate GPT‑Realtime model line. The latest model behind
@@ -13,8 +14,10 @@ architecture for multiple realtime LLM voice backends. The MVP ships with the
 
 ## Features
 
-- Realtime voice conversation: the browser connects directly to OpenAI over
-  WebRTC for minimal latency; the API key never reaches the browser
+- Realtime voice conversation: the browser connects directly to the backend
+  (WebRTC for OpenAI, WebSocket + PCM streaming for Grok) for minimal
+  latency; API keys never reach the browser — the token service mints
+  short-lived ephemeral secrets for both backends
 - Live captions: your speech (input transcription) and the AI's reply are
   rendered word by word
 - Mute and type-to-talk during a call
@@ -61,6 +64,8 @@ project root, which overrides inherited shell variables). See
 | --- | --- | --- |
 | `OPENAI_API_KEY` | — | OpenAI API key. Required unless users paste their own key in the page settings. |
 | `OPENAI_BASE_URL` | `https://api.openai.com` | Custom OpenAI-compatible API base URL. |
+| `XAI_API_KEY` | — | xAI API key; required for the Grok Voice Agent backend. |
+| `XAI_BASE_URL` | `https://api.x.ai` | Custom xAI API base URL. |
 | `TOKEN_SERVER_PORT` | `8787` | Port for the Express token service. Must match the `/api` proxy target in `vite.config.ts` during development. |
 | `BASE_PATH` | `/` (root) | URL sub-path the server mounts everything under, e.g. `/voice` when deployed behind a reverse proxy at `https://example.com/voice/`. Pair with the `VITE_BASE_PATH` build arg below. |
 | `REQUIRE_AUTH` | `false` | Set to `true` to require a valid login for every request except `/api/health`. When enabled, `AUTH_JWT_SECRET` must also be set or the server refuses to start. |

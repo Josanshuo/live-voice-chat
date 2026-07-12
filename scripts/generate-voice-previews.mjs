@@ -9,9 +9,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, "../.env"), override: true });
 
 const OPENAI_BASE = process.env.OPENAI_BASE_URL || "https://api.openai.com";
+const XAI_BASE = process.env.XAI_BASE_URL || "https://api.x.ai";
 const PREVIEW_TEXT = "你好呀，这是我的声音，喜欢就选我吧！";
-// keep in sync with voices in src/lib/live/providers/openai.ts
-const VOICES = [
+
+// keep in sync with the voices in src/lib/live/providers/*
+const OPENAI_VOICES = [
   "marin",
   "cedar",
   "alloy",
@@ -23,41 +25,74 @@ const VOICES = [
   "shimmer",
   "verse",
 ];
+const GROK_VOICES = ["eve", "ara", "rex", "sal", "leo"];
 
-const apiKey = process.env.OPENAI_API_KEY;
-if (!apiKey) {
-  console.error("缺少 OPENAI_API_KEY（.env）");
-  process.exit(1);
+async function generate(provider, voices, synthesize) {
+  const outDir = path.resolve(__dirname, `../public/voice-previews/${provider}`);
+  fs.mkdirSync(outDir, { recursive: true });
+  for (const voice of voices) {
+    const file = path.join(outDir, `${voice}.mp3`);
+    if (fs.existsSync(file)) {
+      console.log(`skip   ${provider}/${voice} (已存在)`);
+      continue;
+    }
+    try {
+      const buf = await synthesize(voice);
+      fs.writeFileSync(file, buf);
+      console.log(`生成   ${provider}/${voice}.mp3 (${(buf.length / 1024).toFixed(0)} KB)`);
+    } catch (err) {
+      console.error(`失败   ${provider}/${voice}: ${err.message}`);
+      process.exitCode = 1;
+    }
+  }
 }
 
-const outDir = path.resolve(__dirname, "../public/voice-previews/openai");
-fs.mkdirSync(outDir, { recursive: true });
-
-for (const voice of VOICES) {
-  const file = path.join(outDir, `${voice}.mp3`);
-  if (fs.existsSync(file)) {
-    console.log(`skip   ${voice} (已存在)`);
-    continue;
-  }
-  const res = await fetch(`${OPENAI_BASE}/v1/audio/speech`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini-tts",
-      voice,
-      input: PREVIEW_TEXT,
-      response_format: "mp3",
-    }),
-  });
+async function readAudio(res) {
   if (!res.ok) {
-    console.error(`失败   ${voice}: ${res.status} ${(await res.text()).slice(0, 120)}`);
-    process.exitCode = 1;
-    continue;
+    throw new Error(`${res.status} ${(await res.text()).slice(0, 120)}`);
   }
-  const buf = Buffer.from(await res.arrayBuffer());
-  fs.writeFileSync(file, buf);
-  console.log(`生成   ${voice}.mp3 (${(buf.length / 1024).toFixed(0)} KB)`);
+  return Buffer.from(await res.arrayBuffer());
+}
+
+if (process.env.OPENAI_API_KEY) {
+  await generate("openai", OPENAI_VOICES, async (voice) =>
+    readAudio(
+      await fetch(`${OPENAI_BASE}/v1/audio/speech`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini-tts",
+          voice,
+          input: PREVIEW_TEXT,
+          response_format: "mp3",
+        }),
+      })
+    )
+  );
+} else {
+  console.log("跳过 openai（未配置 OPENAI_API_KEY）");
+}
+
+if (process.env.XAI_API_KEY) {
+  await generate("grok", GROK_VOICES, async (voice) =>
+    readAudio(
+      await fetch(`${XAI_BASE}/v1/tts`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.XAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text: PREVIEW_TEXT,
+          voice_id: voice,
+          language: "zh",
+        }),
+      })
+    )
+  );
+} else {
+  console.log("跳过 grok（未配置 XAI_API_KEY）");
 }

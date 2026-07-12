@@ -40,7 +40,9 @@ class OpenAIRealtimeClient extends LiveClient {
     });
     const tokenData = await tokenRes.json().catch(() => ({}));
     if (!tokenRes.ok || !tokenData.value) {
-      throw new Error(tokenData.error || t("openai.keyFailed"));
+      throw new Error(
+        tokenData.error || `${t("openai.keyFailed")} (HTTP ${tokenRes.status})`
+      );
     }
     const ephemeralKey: string = tokenData.value;
 
