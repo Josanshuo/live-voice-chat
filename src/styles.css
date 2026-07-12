@@ -195,6 +195,91 @@ body {
   padding: 8px 10px;
 }
 
+.dropdown {
+  position: relative;
+}
+
+.dropdown-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  padding: 9px 12px;
+  text-align: left;
+  transition: border-color 120ms;
+}
+
+.dropdown-btn:hover:not(:disabled),
+.dropdown-btn[aria-expanded="true"] {
+  border-color: var(--accent);
+}
+
+.dropdown-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.dropdown-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdown-caret {
+  color: var(--text-dim);
+  flex-shrink: 0;
+  transition: transform 120ms;
+}
+
+.dropdown-caret-open {
+  transform: rotate(180deg);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  /* above the mobile bottom sheets (z-index 30) */
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+.dropdown-option {
+  background: none;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.dropdown-option:hover {
+  background: var(--panel);
+}
+
+.dropdown-option-selected,
+.dropdown-option-selected:hover {
+  background: #16233d;
+  color: var(--accent-2);
+}
+
 .chips {
   display: flex;
   flex-direction: column;
@@ -551,6 +636,12 @@ body {
   }
 
   .chip {
+    font-size: 14px;
+    padding: 11px 14px;
+  }
+
+  .dropdown-btn,
+  .dropdown-option {
     font-size: 14px;
     padding: 11px 14px;
   }

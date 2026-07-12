@@ -10,9 +10,83 @@ export interface Settings {
   apiKey: string;
 }
 
-// Custom chip pickers instead of native <select>: embedded browsers often
-// can't open native dropdown popups, and chips give an obvious
-// selected/disabled state on touch screens.
+// Custom dropdown instead of a native <select>: embedded browsers often
+// can't open native dropdown popups, and this stays styleable and testable
+// everywhere. Closes on outside click or Escape.
+function Dropdown({
+  options,
+  value,
+  onSelect,
+  disabled,
+}: {
+  options: { id: string; label: string }[];
+  value: string;
+  onSelect: (id: string) => void;
+  disabled: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDocClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDocClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const current = options.find((o) => o.id === value);
+
+  return (
+    <div className="dropdown" ref={rootRef}>
+      <button
+        type="button"
+        className="dropdown-btn"
+        disabled={disabled}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <span className="dropdown-label">{current?.label ?? value}</span>
+        <span className={`dropdown-caret ${open ? "dropdown-caret-open" : ""}`}>
+          ▾
+        </span>
+      </button>
+      {open && (
+        <div className="dropdown-menu" role="listbox">
+          {options.map((o) => (
+            <button
+              key={o.id}
+              type="button"
+              role="option"
+              aria-selected={o.id === value}
+              className={`dropdown-option ${
+                o.id === value ? "dropdown-option-selected" : ""
+              }`}
+              onClick={() => {
+                onSelect(o.id);
+                setOpen(false);
+              }}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Chip picker for voices: every option stays visible and tappable, which
+// suits the click-to-preview interaction.
 function ChipGroup({
   options,
   value,
@@ -103,7 +177,7 @@ export default function SettingsPanel({
 
       <div className="field">
         <span className="field-name">{t("settings.model")}</span>
-        <ChipGroup
+        <Dropdown
           options={modelOptions}
           value={`${settings.providerId}::${settings.model}`}
           disabled={disabled}
