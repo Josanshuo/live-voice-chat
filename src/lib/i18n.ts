@@ -12,7 +12,7 @@ export type Lang = "en" | "zh";
 const LANG_KEY = "voice-live-lang";
 
 const en = {
-  "header.subtitle": "Multi-backend realtime LLM voice · OpenAI + Grok",
+  "header.subtitle": "Multi-backend realtime LLM voice · OpenAI + Grok + Gemini",
   "nav.transcript": "Captions",
   "nav.settings": "Settings",
   "nav.done": "Done",
@@ -67,13 +67,19 @@ const en = {
   "grok.connecting": "Connecting to Grok…",
   "grok.connectFailed": "Grok connection failed ({0})",
 
+  "gemini.providerLabel": "Google Gemini",
+  "gemini.modelFlagship":
+    "gemini-3.1-flash-live-preview (the engine behind Gemini Live)",
+  "gemini.connecting": "Connecting to Gemini…",
+  "gemini.connectFailed": "Gemini connection failed ({0})",
+
   "registry.unknownBackend": "Unknown live backend: {0}",
 };
 
 export type MsgKey = keyof typeof en;
 
 const zh: Record<MsgKey, string> = {
-  "header.subtitle": "多后端 LLM 实时语音 · OpenAI + Grok",
+  "header.subtitle": "多后端 LLM 实时语音 · OpenAI + Grok + Gemini",
   "nav.transcript": "字幕",
   "nav.settings": "设置",
   "nav.done": "完成",
@@ -126,6 +132,11 @@ const zh: Record<MsgKey, string> = {
   "grok.modelFlagship": "grok-voice-latest（Grok 语音同款）",
   "grok.connecting": "正在连接 Grok…",
   "grok.connectFailed": "Grok 连接失败 ({0})",
+
+  "gemini.providerLabel": "Google Gemini",
+  "gemini.modelFlagship": "gemini-3.1-flash-live-preview（Gemini Live 同款）",
+  "gemini.connecting": "正在连接 Gemini…",
+  "gemini.connectFailed": "Gemini 连接失败 ({0})",
 
   "registry.unknownBackend": "未知的 live 后端: {0}",
 };

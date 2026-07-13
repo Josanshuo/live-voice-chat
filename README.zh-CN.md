@@ -3,9 +3,9 @@
 [English](README.md) | 中文
 
 类似 ChatGPT 语音模式（ChatGPT Live）的 Web 应用，支持可插拔的多 LLM 实时语音
-后端。已接入两个后端：**OpenAI Realtime API**（ChatGPT 语音同款，默认模型
-`gpt-realtime-2.1`）和 **xAI Grok Voice Agent API**（`grok-voice-latest`，
-Eve/Ara/Rex/Sal/Leo 五种声音）。
+后端。已接入三个后端：**OpenAI Realtime API**（ChatGPT 语音同款，默认模型
+`gpt-realtime-2.1`）、**xAI Grok Voice Agent API**（`grok-voice-latest`）和
+**Google Gemini Live API**（`gemini-3.1-flash-live-preview`）。
 
 > 说明：GPT‑5.6（Sol/Terra/Luna）是文本模型系列，OpenAI 的实时语音走的是独立的
 > GPT‑Realtime 模型线；ChatGPT 语音模式当前对应的最新模型即 `gpt-realtime-2.1`。
@@ -57,6 +57,8 @@ npm run dev
 | `OPENAI_BASE_URL` | `https://api.openai.com` | 自定义 OpenAI 兼容 API 地址。 |
 | `XAI_API_KEY` | — | xAI API key，启用 Grok Voice Agent 后端时必需。 |
 | `XAI_BASE_URL` | `https://api.x.ai` | 自定义 xAI API 地址。 |
+| `GEMINI_API_KEY` | — | Google API key（[aistudio.google.com/apikey](https://aistudio.google.com/apikey)），启用 Gemini Live 后端时必需。 |
+| `GEMINI_BASE_URL` | `https://generativelanguage.googleapis.com` | 自定义 Gemini API 地址。 |
 | `TOKEN_SERVER_PORT` | `8787` | Express token 服务端口。开发时需与 `vite.config.ts` 中 `/api` 代理目标一致。 |
 | `BASE_PATH` | `/`（根路径） | 服务端挂载的 URL 子路径，例如部署在 `https://example.com/voice/` 反代之后时设为 `/voice`。需与下方 `VITE_BASE_PATH` 构建参数配套。 |
 | `REQUIRE_AUTH` | `false` | 设为 `true` 时，除 `/api/health` 外的所有请求都要求有效登录。启用时必须同时设置 `AUTH_JWT_SECRET`，否则服务端拒绝启动。 |

@@ -3,10 +3,11 @@
 English | [中文](README.zh-CN.md)
 
 A web app similar to ChatGPT's voice mode (ChatGPT Live), with a pluggable
-architecture for multiple realtime LLM voice backends. Ships with two
+architecture for multiple realtime LLM voice backends. Ships with three
 backends: the **OpenAI Realtime API** (the engine behind ChatGPT voice,
-default model `gpt-realtime-2.1`) and the **xAI Grok Voice Agent API**
-(`grok-voice-latest`, voices Eve/Ara/Rex/Sal/Leo).
+default model `gpt-realtime-2.1`), the **xAI Grok Voice Agent API**
+(`grok-voice-latest`), and the **Google Gemini Live API**
+(`gemini-3.1-flash-live-preview`).
 
 > Note: GPT‑5.6 (Sol/Terra/Luna) is the text model family; OpenAI's realtime
 > voice runs on the separate GPT‑Realtime model line. The latest model behind
@@ -66,6 +67,8 @@ project root, which overrides inherited shell variables). See
 | `OPENAI_BASE_URL` | `https://api.openai.com` | Custom OpenAI-compatible API base URL. |
 | `XAI_API_KEY` | — | xAI API key; required for the Grok Voice Agent backend. |
 | `XAI_BASE_URL` | `https://api.x.ai` | Custom xAI API base URL. |
+| `GEMINI_API_KEY` | — | Google API key ([aistudio.google.com/apikey](https://aistudio.google.com/apikey)); required for the Gemini Live backend. |
+| `GEMINI_BASE_URL` | `https://generativelanguage.googleapis.com` | Custom Gemini API base URL. |
 | `TOKEN_SERVER_PORT` | `8787` | Port for the Express token service. Must match the `/api` proxy target in `vite.config.ts` during development. |
 | `BASE_PATH` | `/` (root) | URL sub-path the server mounts everything under, e.g. `/voice` when deployed behind a reverse proxy at `https://example.com/voice/`. Pair with the `VITE_BASE_PATH` build arg below. |
 | `REQUIRE_AUTH` | `false` | Set to `true` to require a valid login for every request except `/api/health`. When enabled, `AUTH_JWT_SECRET` must also be set or the server refuses to start. |

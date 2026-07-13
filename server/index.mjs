@@ -20,6 +20,8 @@ app.use(express.json());
 const PORT = process.env.TOKEN_SERVER_PORT || 8787;
 const OPENAI_BASE = process.env.OPENAI_BASE_URL || "https://api.openai.com";
 const XAI_BASE = process.env.XAI_BASE_URL || "https://api.x.ai";
+const GEMINI_BASE =
+  process.env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com";
 
 // When deployed behind LibreChat's nginx the app lives under /voice; nginx
 // passes the prefix through unchanged, so mount everything under BASE_PATH.
@@ -82,6 +84,7 @@ router.get("/api/health", (_req, res) => {
     providers: {
       openai: Boolean(process.env.OPENAI_API_KEY),
       grok: Boolean(process.env.XAI_API_KEY),
+      gemini: Boolean(process.env.GEMINI_API_KEY),
     },
   });
 });
@@ -162,6 +165,44 @@ router.post("/api/xai/client-secret", async (req, res) => {
     res.json({ value: data.value, expires_at: data.expires_at });
   } catch (err) {
     res.status(502).json({ error: `Cannot reach xAI: ${err.message}` });
+  }
+});
+
+// Gemini Live: mint an ephemeral auth token (v1alpha auth_tokens) that the
+// browser uses to open the BidiGenerateContent WebSocket directly.
+router.post("/api/gemini/client-secret", async (req, res) => {
+  const apiKey = req.get("x-gemini-key") || process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return res.status(400).json({
+      error: "Missing Gemini API key: set GEMINI_API_KEY in the server's .env.",
+    });
+  }
+
+  try {
+    const now = Date.now();
+    const upstream = await fetch(`${GEMINI_BASE}/v1alpha/auth_tokens`, {
+      method: "POST",
+      headers: {
+        "x-goog-api-key": apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        uses: 1,
+        // one minute to start the session, 30 minutes of session lifetime
+        newSessionExpireTime: new Date(now + 60 * 1000).toISOString(),
+        expireTime: new Date(now + 30 * 60 * 1000).toISOString(),
+      }),
+    });
+    const data = await upstream.json().catch(() => ({}));
+    if (!upstream.ok) {
+      const message =
+        data?.error?.message || `Gemini returned ${upstream.status}`;
+      return res.status(upstream.status).json({ error: message });
+    }
+    // The token's resource name doubles as the credential.
+    res.json({ value: data.name });
+  } catch (err) {
+    res.status(502).json({ error: `Cannot reach Gemini: ${err.message}` });
   }
 });
 
